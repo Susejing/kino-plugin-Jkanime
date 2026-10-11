@@ -1,4 +1,4 @@
-// plugin.js - Latanime (versión corregida)
+// plugin.js - Latanime (corregido)
 
 const BASE_URL = "https://latanime.org";
 
@@ -6,21 +6,20 @@ const BASE_URL = "https://latanime.org";
 export async function search(query) {
   const url = `${BASE_URL}/buscar?q=${encodeURIComponent(query.q)}`;
 
-  // Usamos kino.browser.page: abre la página como un navegador real
-  // y espera a que Cloudflare termine su revisión automática.
+  // Usamos kino.browser.page para leer la página ya renderizada.
+  // "waitFor" es una cadena: el selector CSS que debe aparecer.
   const page = await kino.browser.page(url, {
-    timeoutMs: 12000,
-    // Esperamos a que el HTML ya no sea la página de revisión de Cloudflare
-    // y contenga enlaces a animes.
-    waitFor: 'a[href*="/anime/"]'
+    timeoutMs: 15000,
+    waitFor: 'a[href*="/anime/"]' // Espera a que existan enlaces a animes
   });
 
   const html = page.html;
 
-  // --- Parseo del HTML ---
+  // --- Parseo del HTML (expresiones regulares CORREGIDAS) ---
   const results = [];
   const seen = new Set();
-  // Expresión regular CORREGIDA (con la etiqueta <a al inicio)
+
+  // 1. Regex para encontrar enlaces a animes (ahora sí empieza con <a)
   const linkRegex = /<a[^>]+href="([^"]*\/anime\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gs;
 
   let match;
@@ -29,8 +28,8 @@ export async function search(query) {
     if (seen.has(href) || !href) continue;
     seen.add(href);
 
+    // 2. Extraer título (regex CORREGIDA, empieza con <h)
     let title = '';
-    // Expresión regular CORREGIDA (con la etiqueta <h al inicio)
     const headingMatch = inner.match(/<h[2-4][^>]*>([^<]+)<\/h[2-4]>/);
     if (headingMatch) {
       title = headingMatch[1].trim();
@@ -40,8 +39,8 @@ export async function search(query) {
 
     if (!title || title.length < 2) continue;
 
+    // 3. Extraer poster (regex CORREGIDA, empieza con <img)
     let poster = '';
-    // Expresión regular CORREGIDA (con la etiqueta <img al inicio)
     const imgMatch = inner.match(/<img[^>]+src="([^"]+)"/);
     if (imgMatch) {
       poster = imgMatch[1];
@@ -63,12 +62,15 @@ export async function search(query) {
 export async function resolve(ref) {
   const url = ref.startsWith("http") ? ref : `${BASE_URL}${ref}`;
 
-  const captured = await kino.browser.capture(url, { timeoutMs: 30000 });
+  // kino.browser.capture SOLO funciona dentro de resolve.
+  const captured = await kino.browser.capture(url, { timeoutMs: 25000 });
 
+  // La captura devuelve un objeto con la propiedad "requests"
   if (!captured || !captured.requests || captured.requests.length === 0) {
     throw new Error("No se capturó ninguna petición de video en Latanime.");
   }
 
+  // Buscamos la primera petición que parezca un video o un enlace de reproductor
   const videoRequest = captured.requests.find(req =>
     req.url && (
       req.url.includes('.mp4') ||
@@ -80,7 +82,7 @@ export async function resolve(ref) {
   ) || captured.requests[0];
 
   if (!videoRequest || !videoRequest.url) {
-    throw new Error("No se pudo extraer la URL del video.");
+    throw new Error("No se pudo extraer la URL del video de las peticiones capturadas.");
   }
 
   return { url: videoRequest.url };
