@@ -1,6 +1,6 @@
-# Plugin de Latanime para Kino
+# Plugin de animeyt para Kino
 
-Plugin no oficial para ver anime en Latino desde [latanime.org](https://latanime.org) en la app Kino.
+Plugin no oficial para ver anime en Latino desde animeyt.cc/tv/ en la app Kino.
 
 ## Capacidades
 - `search`: Busca animes por título.
