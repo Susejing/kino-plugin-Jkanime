@@ -1,16 +1,16 @@
 {
-  "id": "latanime-org",
-  "name": "Latanime",
+  "id": "animeyt-cc",
+  "name": "AnimeYT",
   "version": "1.0.0",
   "apiVersion": 6,
   "entry": "plugin.js",
-  "description": "Anime en Latino desde latanime.org",
+  "description": "Anime en Latino/Sub desde animeyt.cc",
   "author": "Susejing",
-  "homepage": "https://github.com/Susejing/kino-plugin-latanime",
-  "hosts": ["latanime.org", "*.latanime.org"],
+  "homepage": "https://github.com/Susejing/kino-plugin-animeyt",
+  "hosts": ["animeyt.cc", "*.animeyt.cc"],
   "capabilities": ["search", "resolve"],
   "browser": "pages",
   "streamHosts": "any",
-  "color": "#E0A030",
+  "color": "#FF6B6B",
   "icon": "icon.png"
 }
