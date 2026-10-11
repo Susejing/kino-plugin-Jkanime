@@ -1,16 +1,16 @@
 {
-  "id": "animeyt-cc",
-  "name": "AnimeYT",
+  "id": "jkanime-net",
+  "name": "Jkanime",
   "version": "1.0.0",
   "apiVersion": 6,
   "entry": "plugin.js",
-  "description": "Anime en Latino/Sub desde animeyt.cc",
+  "description": "Anime Sub desde jkanime.net",
   "author": "Susejing",
-  "homepage": "https://github.com/Susejing/kino-plugin-animeyt",
-  "hosts": ["animeyt.cc", "*.animeyt.cc"],
+  "homepage": "https://github.com/Susejing/kino-plugin-jkanime",
+  "hosts": ["jkanime.net", "*.jkanime.net"],
   "capabilities": ["search", "resolve"],
   "browser": "pages",
   "streamHosts": "any",
-  "color": "#FF6B6B",
+  "color": "#00A8E8",
   "icon": "icon.png"
 }
