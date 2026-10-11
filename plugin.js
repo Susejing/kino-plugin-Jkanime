@@ -1,33 +1,41 @@
-// plugin.js - Latanime (corregido)
+// plugin.js - AnimeYT
 
-const BASE_URL = "https://latanime.org";
+const BASE_URL = "https://animeyt.cc";
 
 // --- Función de Búsqueda ---
 export async function search(query) {
-  const url = `${BASE_URL}/buscar?q=${encodeURIComponent(query.q)}`;
+  // La búsqueda en AnimeYT se realiza en /tv/?s=
+  const url = `${BASE_URL}/tv/?s=${encodeURIComponent(query.q)}`;
 
-  // kino.browser.page lee la página ya renderizada, pasando Cloudflare.
-  const page = await kino.browser.page(url, {
-    timeoutMs: 15000,
-    waitFor: 'a[href*="/anime/"]' // Espera a que existan enlaces a animes
+  // Usamos kino.fetch con un User-Agent de navegador para asegurar una respuesta correcta.
+  const response = await kino.fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+    }
   });
 
-  const html = page.html;
+  if (!response.ok) {
+    throw new Error(`animeyt.cc respondió con ${response.status}`);
+  }
 
-  // --- Parseo del HTML (expresiones regulares CORREGIDAS) ---
+  const html = await response.text();
+
+  // --- Parseo del HTML ---
   const results = [];
   const seen = new Set();
 
-  // 1. Regex para encontrar enlaces a animes (ahora sí empieza con <a)
-  const linkRegex = /<a[^>]+href="([^"]*\/anime\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gs;
+  // 1. Regex para encontrar los enlaces a las obras (series/películas).
+  //    Los resultados de búsqueda apuntan a URLs como /tv/nombre-de-la-obra/
+  const linkRegex = /<a[^>]+href="([^"]*\/tv\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gs;
 
   let match;
   while ((match = linkRegex.exec(html)) !== null) {
     const [, href, inner] = match;
-    if (seen.has(href) || !href) continue;
+    // Evitamos duplicados y enlaces que no sean de una obra específica.
+    if (seen.has(href) || !href || href === '/tv/') continue;
     seen.add(href);
 
-    // 2. Extraer título (regex CORREGIDA, empieza con <h)
+    // 2. Extraer el título: buscamos un encabezado dentro del enlace o usamos el texto.
     let title = '';
     const headingMatch = inner.match(/<h[2-4][^>]*>([^<]+)<\/h[2-4]>/);
     if (headingMatch) {
@@ -36,9 +44,10 @@ export async function search(query) {
       title = inner.replace(/<[^>]+>/g, '').trim();
     }
 
+    // Descartamos títulos vacíos o demasiado cortos.
     if (!title || title.length < 2) continue;
 
-    // 3. Extraer poster (regex CORREGIDA, empieza con <img)
+    // 3. Extraer la imagen de portada (poster).
     let poster = '';
     const imgMatch = inner.match(/<img[^>]+src="([^"]+)"/);
     if (imgMatch) {
@@ -49,7 +58,7 @@ export async function search(query) {
       id: href,
       ref: href,
       title: title,
-      kind: "series",
+      kind: "series", // AnimeYT muestra series y películas.
       poster: poster,
     });
   }
@@ -59,15 +68,19 @@ export async function search(query) {
 
 // --- Función de Resolución ---
 export async function resolve(ref) {
+  // `ref` es la URL relativa de la obra (ej. "/tv/one-piece-heroines/").
   const url = ref.startsWith("http") ? ref : `${BASE_URL}${ref}`;
 
-  // kino.browser.capture captura las peticiones de red para encontrar el video.
+  // Usamos kino.browser.capture para ejecutar la página y capturar las peticiones de red.
+  // Esto es necesario porque los episodios se cargan dinámicamente con JavaScript.
   const captured = await kino.browser.capture(url, { timeoutMs: 25000 });
 
   if (!captured || !captured.requests || captured.requests.length === 0) {
-    throw new Error("No se capturó ninguna petición de video en Latanime.");
+    throw new Error("No se capturó ninguna petición de red en AnimeYT.");
   }
 
+  // Buscamos la primera petición que parezca un video o un enlace de reproductor.
+  // Los sitios de anime suelen usar archivos .mp4 o .m3u8 (HLS).
   const videoRequest = captured.requests.find(req =>
     req.url && (
       req.url.includes('.mp4') ||
@@ -76,7 +89,7 @@ export async function resolve(ref) {
       req.url.includes('embed') ||
       req.url.includes('stream')
     )
-  ) || captured.requests[0];
+  ) || captured.requests[0]; // Si no encontramos una obvia, usamos la primera.
 
   if (!videoRequest || !videoRequest.url) {
     throw new Error("No se pudo extraer la URL del video de las peticiones capturadas.");
