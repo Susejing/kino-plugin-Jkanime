@@ -6,8 +6,7 @@ const BASE_URL = "https://latanime.org";
 export async function search(query) {
   const url = `${BASE_URL}/buscar?q=${encodeURIComponent(query.q)}`;
 
-  // Usamos kino.browser.page para leer la página ya renderizada.
-  // "waitFor" es una cadena: el selector CSS que debe aparecer.
+  // kino.browser.page lee la página ya renderizada, pasando Cloudflare.
   const page = await kino.browser.page(url, {
     timeoutMs: 15000,
     waitFor: 'a[href*="/anime/"]' // Espera a que existan enlaces a animes
@@ -62,15 +61,13 @@ export async function search(query) {
 export async function resolve(ref) {
   const url = ref.startsWith("http") ? ref : `${BASE_URL}${ref}`;
 
-  // kino.browser.capture SOLO funciona dentro de resolve.
+  // kino.browser.capture captura las peticiones de red para encontrar el video.
   const captured = await kino.browser.capture(url, { timeoutMs: 25000 });
 
-  // La captura devuelve un objeto con la propiedad "requests"
   if (!captured || !captured.requests || captured.requests.length === 0) {
     throw new Error("No se capturó ninguna petición de video en Latanime.");
   }
 
-  // Buscamos la primera petición que parezca un video o un enlace de reproductor
   const videoRequest = captured.requests.find(req =>
     req.url && (
       req.url.includes('.mp4') ||
