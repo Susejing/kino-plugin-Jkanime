@@ -2,13 +2,15 @@
   "id": "latanime-org",
   "name": "Latanime",
   "version": "1.0.0",
-  "apiVersion": 3,
+  "apiVersion": 6,
   "entry": "plugin.js",
   "description": "Anime en Latino desde latanime.org",
   "author": "Susejing",
   "homepage": "https://github.com/Susejing/kino-plugin-latanime",
   "hosts": ["latanime.org", "*.latanime.org"],
   "capabilities": ["search", "resolve"],
+  "browser": "pages",
+  "streamHosts": "any",
   "color": "#E0A030",
   "icon": "icon.png"
 }
